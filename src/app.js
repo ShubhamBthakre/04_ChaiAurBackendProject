@@ -1,5 +1,7 @@
 import express from "express";
 import cors from 'cors'
+
+//The cookie-parser middleware simplifies the handling of cookies in your Express application, making it easier to read and set cookies within your routes. It automatically parses incoming cookies and makes them accessible through the req.cookies object. Additionally, it provides a convenient method, res.cookie(), for setting cookies in the response.
 import cookieParser from "cookie-parser";
 
 
@@ -17,6 +19,7 @@ app.use(express.json({limit:"20kb"}))
 
 //this configuration will parse the url and  represent reserved and unsafe characters in a URL (Uniform Resource Locator) by replacing them with a "%" followed by two hexadecimal digits.  (like space,%(percentage))
 app.use(express.urlencoded({extended:true,limit:"20kb"}))
+example:-
 Original URL: https://example.com/search?q=hello world
 URL Encoded: https://example.com/search?q=hello%20world
 In this example, the space in the query parameter "hello world" is encoded as %20 to make it a valid URL.
@@ -26,7 +29,7 @@ In this example, the space in the query parameter "hello world" is encoded as %2
 app.use(express.static("public")) 
 //public name is not mandetory we can set any folder name in current directory
 
-//this configuration will allow us to access cookies store in client's browser by server only
+//this configuration will allow us to access and set cookies in client's browser store by server only
 app.use(cookieParser())
 
 
@@ -61,8 +64,9 @@ import userRouter from './routes/user.route.js'
 
 
 //routes declaration
-app.use("/api/v1/users", userRouter)
+app.use("/api/v1/users", userRouter) // http://localhost:8000/api/v1/users/register url aisa banenga || we extract router from express what why we use here app.use 
 
-// http://localhost:8000/api/v1/users/register
+
+
 
 export { app }

@@ -1,3 +1,4 @@
+//Error is trace in core Node js but Request or Response is from express framework
 class ApiResponse{
     constructor(statusCode,data,message="Success"){
         this.statusCode=statusCode

@@ -1,11 +1,14 @@
 import multer from "multer";
 
 //cb:callBack
+//we get file parame from multer here 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) { 
       cb(null, "./public/temp")
     },
     filename: function (req, file, cb) {
+      //todo console log file
+      console.log("multer filename", file)
       cb(null, file.originalname)
     }
   })
@@ -14,6 +17,8 @@ const storage = multer.diskStorage({
 //   const upload = multer({ storage: storage })
 
 
-export const upload=multer({storage})
+export const upload=multer({
+  storage
+})
 
 

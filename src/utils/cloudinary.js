@@ -9,13 +9,15 @@ cloudinary.config({
 
 const uploadOnCloudinary = async (localFilePath) => {
   try {
+    //todo:-if localfilePath is not there then we can return error like "file could not attack or link"
     if (!localFilePath) return null;
+    //upload the file on cloudinary
     const response=await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
     });
 
     //file has been uploaded successfully
-    // console.log("File uploaded successfully on cloudinary",response.url);
+    console.log("File uploaded successfully on cloudinary",response.url);
     fs.unlinkSync(localFilePath) //file will remove from locally after successfully upload on cloudinary
     
     return response
@@ -40,3 +42,4 @@ export {uploadOnCloudinary}
 //     console.log(result);
 //   }
 // );
+

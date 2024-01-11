@@ -1,4 +1,5 @@
 import mongoose,{Schema} from "mongoose";
+//mongoose-aggregate-paginate-v2 is a plugin for Mongoose, an ODM (Object Data Modeling) library for MongoDB and Node.js. This plugin extends Mongoose's aggregation framework with pagination support, making it easier to paginate through large sets of data when using MongoDB aggregation pipelines.
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2"
 
 
@@ -21,8 +22,9 @@ const videoSchema=new Schema({
         required:true
     },
     duration:{
-        type:Number,
+        type:Number, //we will get duration from cloudinary when we upload vedio on cloudinary
         required:true
+
     },
     views:{
         type:Number,
@@ -41,6 +43,7 @@ const videoSchema=new Schema({
 
 },{timestamps:true})
 
+//this is syntax to inject plugin
 videoSchema.plugin(mongooseAggregatePaginate)
 
 

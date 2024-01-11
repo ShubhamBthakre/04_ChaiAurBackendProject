@@ -16,6 +16,10 @@ import {
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
+// import express from "express";
+// const router=express.Router()
+
+//Or
 const router = Router();
 //here we injected upload middleware before registereUser
 router.route("/register").post(

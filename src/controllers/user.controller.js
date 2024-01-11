@@ -34,7 +34,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 const registerUser = asyncHandler(async (req, res) => {
   //get userdetails from frontend
-  //validation-not empty
+  //validation- not empty
   //check if user is already exit: username, email
   //check for image , check for avatar
   //upload them to cloudinary, check for avatar if it is properly uploaded or not
@@ -60,8 +60,7 @@ const registerUser = asyncHandler(async (req, res) => {
   //  User.findOne({username})
   //  User.findOne({email})
 
-  //to check both username and email simultaneously, special syntax $or
-
+  //to check user from both username or email simultaneously, special syntax $or
   const existedUser = await User.findOne({
     $or: [{ username }, { email }],
   });
@@ -211,7 +210,7 @@ const logoutUser = asyncHandler(async (req, res) => {
         //this remove the field from the document
       },
     },
-    
+
     {
       // by this parameter we will get new value in return i.e. updated one (refresh token)
       new: true,
@@ -468,9 +467,6 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, channel, "User channel fetch successfully"));
 });
 
-
-
-
 const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
@@ -514,7 +510,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     },
   ]);
 
-  return res.status(200).json( new ApiResponse(200,user[0].watchHistory))
+  return res.status(200).json(new ApiResponse(200, user[0].watchHistory));
 });
 
 export {

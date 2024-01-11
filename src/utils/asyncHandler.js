@@ -1,5 +1,10 @@
 //these are rapper function for async and await
 
+//const asyncHandler=()=>{}  normal async function
+//const asyncHandler=(func)=>{()=>{}}  //we are taking function as paramter and passing it to the next function like High Order function
+//const asyncHandler=(func)=>()={} //remove extra curly bracket
+//const asyncHandler=()=>async()={} //make it async
+
 //Approach-1
 // const asyncHandler = (fn) => async (req, res, next) => {
 //   try {
