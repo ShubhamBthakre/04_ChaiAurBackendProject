@@ -1,10 +1,12 @@
 import { ApiError } from "../utils/apiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary,deleteCloudinaryOldImage } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import Jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+
+
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -22,6 +24,8 @@ const generateAccessAndRefreshTokens = async (userId) => {
     user.refreshToken = refreshToken;
     //method to add refresh token in database || validateBeforeSave:false will not validate password it will directly save user object in database
     await user.save({ validateBeforeSave: false });
+
+
 
     return { accessToken, refreshToken };
   } catch (error) {
@@ -45,7 +49,8 @@ const registerUser = asyncHandler(async (req, res) => {
 
   //form se data aa rha hai ya phir json se data aa rha hai toh req.body me mil jayenga
   const { username, fullName, email, password } = req.body;
-  console.log(fullName, email);
+ 
+  console.log("req.body details:- ",req.body);
 
   //we are checking if is there any empty field
   if (
@@ -60,8 +65,9 @@ const registerUser = asyncHandler(async (req, res) => {
   //  User.findOne({username})
   //  User.findOne({email})
 
-  //to check user from both username or email simultaneously, special syntax $or
+  //to check user by both username and email , special syntax $or
   const existedUser = await User.findOne({
+    //we can pass many field in array , this will check user with both the feild username and email
     $or: [{ username }, { email }],
   });
 
@@ -69,14 +75,14 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User with this username or email already exist");
   }
 
-  //routes ke andar middleware add kiya hai (upload) that why we get some extra excess like below ( that middleware will add extra fields in request)
+  //routes ke andar middleware add kiya hai (upload) that why we get some extra excess like below ( that multer middleware will add extra fields in request thats why we can access here req.files)
   //req.body jaise express ne diya hai waise hi multer req.files ka access deta hai
 
   // avatar: user.routes me upload (name) ke field se "avatar" liya hai
-  const avatarLocalPath = req.files?.avatar[0]?.path; //mutiple files hai isliye req.files liya hai
+  const avatarLocalPath = req.files?.avatar[0]?.path; //here user is uploading mutiple files (upload.fields in userRoute for register) thats why req.files liya hai
   // const coverImageLocalPath=req.files?.coverImage[0]?.path;
 
-  console.log(req.files);
+  console.log("req.files details",req.files);
 
   let coverImageLocalPath;
 
@@ -102,6 +108,7 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar file is required");
   }
 
+  //creating user on database
   const user = await User.create({
     username: username.toLowerCase(),
     fullName,
@@ -111,9 +118,11 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
   });
 
+  console.log("createdUser",user)
+
   //mongoDb har ek entry ke sath ek _id ka field add krta hai
   //here we are checking if user is created properly or not by _id which is created by mangoDb
-  // .select method will remove password and refresh token field from response
+  // .select method will remove password and refresh token field from response ||syntax is same
 
   const userCreated = await User.findById(user._id).select(
     "-password -refreshToken"
@@ -135,7 +144,7 @@ const loginUser = asyncHandler(async (req, res) => {
   //find the user by username or email in database
   // password check
   // generate access and refresh token
-  //send cookies
+  //send cookie
 
   const { username, email, password } = req.body;
 
@@ -154,7 +163,7 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User does not exit");
   }
 
-  //check here User or user || user is instance or User i.e. mongoDb instance so all method available in user
+  //check here User or user || User is object of mongoDb or mongoose so it have access of methods like findById,findOne || user is instance of User and have access of custom methods like isPasswordCorrect
   const isPasswordValid = await user.isPasswordCorrect(password); //it give  result in true or false
 
   if (!isPasswordValid) {
@@ -162,26 +171,27 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   console.log("userId:- ", user._id);
-  // we are making sure here it will take time so its better to add await
+  // we are making sure here it will take some time so its better to add await
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
     user._id
   );
 
-  console.log(accessToken);
-  console.log(refreshToken);
+  console.log("accessToken:- ",accessToken);
+  console.log("refreshToken:- ", refreshToken);
 
   //we are making new request to database for access and refresh token || by .select method we will not get password and refreshToken
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
 
-  //for cookies we have to design some options so that frontent developer can not modify cookies to make more secure || by default cookies are modifyble.
+  //for cookies we have to design some options so that frontent developer can not modify cookies to make more secure || by default cookies are modifiable.
   const options = {
     httpOnly: true,
     secure: true,
   };
 
   //it is best practice to send response in json object to user e.g. mobile app development || we can set cookies here because of app.use(cookieParser())
+  //we got access of cookie because of cookie-parser middlware which we used in app
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
@@ -197,6 +207,7 @@ const loginUser = asyncHandler(async (req, res) => {
         "User logged in successfully"
       )
     );
+    //it is not good practice to send access and refresh token in response but for some scenario like userWanted to save it mannually or for mobile app development where we can not set cookies in  cookie
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -204,7 +215,7 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      //this is the MongoDb method
+      //this is the MongoDb operator/method
       $unset: {
         refreshToken: 1,
         //this remove the field from the document
@@ -290,6 +301,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 });
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
+  //todo:- we can add confirmPassword field here also but we can also handle it in frontend
   const { oldPassword, newPassword } = req.body;
   console.log(oldPassword, newPassword);
 
@@ -323,26 +335,40 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullName, email } = req.body;
 
+  //check if is empty ?
   if (!fullName || !email) {
     throw new ApiError(401, "All fields are required");
   }
 
+
+  // if (fullName ===req.user.fullName){
+  //   throw new ApiError(401,"New and Old full name is same please provide different one")
+  // }
+
+  //save user in database
   const user = await User.findByIdAndUpdate(
     req.user?._id,
-    { fullName, email },
+    { $set:{
+      fullName,
+      email
+    } },
     {
       //this will return new object with updated one
       new: true,
     }
   ).select("-password");
 
+  //send response
   return res
     .status(200)
     .json(new ApiResponse(200, user, "Account details updated successfully"));
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
+  //user is uploading single file thats why req.file (we also mentioned upload.single in userRoute for update avatar)
   const avatarLocalPath = req.file?.path;
+
+  console.log("req.file in avatar :- ",req.file)
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is missing");
@@ -353,6 +379,9 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   if (!avatar.url) {
     throw new ApiError(400, "Error while uploading avatar");
   }
+
+  //todo:- delete old image from cloudinary
+  await deleteCloudinaryOldImage(req.user.avatar)
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -372,6 +401,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 const updateUserCoverImage = asyncHandler(async (req, res) => {
   const coverImageLocalPath = req.file?.path;
 
+  console.log("req.file in coverImage :- ",req.file)
+
   if (!coverImageLocalPath) {
     throw new ApiError(400, "Cover Image file is missing");
   }
@@ -381,6 +412,9 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
   if (!coverImage.url) {
     throw new ApiError(400, "Error while uploading Cover Image");
   }
+
+  //todo:- delete old image from cloudinary
+  await deleteCloudinaryOldImage(req.user.coverImage)
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -404,74 +438,89 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     throw new ApiError(400, "username is missing");
   }
 
-  const channel = await User.aggregate([
+  //aggregate is method which take array
+  const channel=await User.aggregate([
     {
-      //match will return one document after one exact match
-      $match: {
-        username: username?.toLowerCase(),
+      $match:{
+        username:username?.toLowerCase()
+      }
+  },
+  {
+    //lookup will return array of documents 
+    $lookup:{
+      from:"subscriptions", //in mongoDb Schema , schema name store in lowercase and plural form
+      localField:"_id",
+      foreignField:"channel",
+      as:"subscribers"
+    }
+
+  },
+  {
+    $lookup:{
+      from:"subscriptions", //in mongoDb Schema , schema name store in lowercase and plural form
+      localField:"_id",
+      foreignField:"subscriber",
+      as:"subscribedTo"
+    }
+
+  },
+  {
+    //addField will add some extra fields
+    $addFields:{
+      subscriberCount:{
+        //size will count total document which takes array as paramer
+        $size:"$subscribers"
       },
-    },
-    {
-      $lookup: {
-        from: "subscriptions", //in database schema store as in lowerscase and plural form,
-        localField: "_id",
-        foreignField: "channel",
-        as: "subscribers", //mere kitna suscriber hai
+      channelsSubscribedToCount:{
+        $size:"$subscribedTo"
       },
-    },
-    {
-      $lookup: {
-        from: "subscriptions", //in database schema store as in lowerscase and plural form,
-        localField: "_id",
-        foreignField: "subscriber",
-        as: "subscribersTo", //maine kisko subscribe kiya hai woh
-      },
-    },
-    {
-      $addFields: {
-        subscribersCount: {
-          $size: "$subscribers",
-        },
-        channelSubscribedToCount: {
-          $size: "subscribersTo",
-        },
-        isSubscribed: {
-          $cond: {
-            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
-            then: true,
-            else: false,
+      // this field is for subscribe button (true or false)
+      isSubscribed:{
+        $cond:{
+          if:{
+            $in:[req.user?._id,"$subscribers.subscriber"]
           },
-        },
-      },
-    },
-    {
-      $project: {
-        fullName: 1,
-        username: 1,
-        email: 1,
-        avatar: 1,
-        coverImage: 1,
-        subscribersCount: 1,
-        channelSubscribedToCount: 1,
-        isSubscribed: 1,
-      },
-    },
-  ]);
+          then:true,
+          else:false
+        }
+      }
+    }
+  }
+  ,
+  {
+    $project:{
+      fullName:1,
+      username:1,
+      subscriberCount:1,
+      channelsSubscribedToCount:1,
+      isSubscribed:1,
+      avatar:1,
+      coverImage:1,
+      email:1,
+    }
+  }
+])
+
+//what datatype does aggregate return
+//todo:console.log(channel)
+
+console.log(channel)
 
   if (!channel?.length) {
     throw new ApiError(404, "Channel does not exit");
   }
 
+  //we have 
   return res
     .status(200)
-    .json(new ApiResponse(200, channel, "User channel fetch successfully"));
+    .json(new ApiResponse(200, channel[0], "User channel fetch successfully"));
 });
 
 const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match: {
-        _id: new mongoose.Types.ObjectId(req.user._id), //aggregate me directly mongoDb se contact hota hai isliye Id match hone k liye aise convert krna padta hai
+        _id: new mongoose.Types.ObjectId(req.user._id), //aggregate me directly mongoDb se contact hota hai isliye object Id match hone k liye aise convert krna padta hai
       },
     },
     {
@@ -512,6 +561,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 
   return res.status(200).json(new ApiResponse(200, user[0].watchHistory));
 });
+
 
 export {
   registerUser,

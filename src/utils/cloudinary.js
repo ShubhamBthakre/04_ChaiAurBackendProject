@@ -1,11 +1,14 @@
 import { v2 as cloudinary } from "cloudinary";
-import fs from "fs"; //this package comes by default with node js , no need to install seperately , it manage all file system work like upload , delete synchrously or asynchronously
+import { extractPublicId, } from 'cloudinary-build-url'
+//this package comes by default with node js , no need to install seperately , it manage all file system work like upload , delete synchrously or asynchronously
+import fs from 'fs';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
 
 const uploadOnCloudinary = async (localFilePath) => {
   try {
@@ -16,21 +19,47 @@ const uploadOnCloudinary = async (localFilePath) => {
       resource_type: "auto",
     });
 
+    console.log("cloudinary response",response)
+
     //file has been uploaded successfully
     console.log("File uploaded successfully on cloudinary",response.url);
-    fs.unlinkSync(localFilePath) //file will remove from locally after successfully upload on cloudinary
+    fs.unlinkSync(localFilePath); //file will remove from locally after successfully upload on cloudinary
     
     return response
 
   } catch (error) {
-    fs.unlinkSync(localFilePath) //remove the locally saved temporary file as the upload option got failed
+    fs.unlinkSync(localFilePath); //remove the locally saved temporary file as the upload option got failed
 
     return null
 
   }
 };
 
-export {uploadOnCloudinary}
+
+const deleteCloudinaryOldImage = async(imageUrl)=>{
+  try {
+
+    const publicId = await extractPublicId(
+      imageUrl
+    );
+
+    cloudinary.uploader.destroy(publicId, (error, result) => {
+      if (error) {
+        throw new ApiError(401,`Error deleting image:, ${error}`)
+      } else {
+        console.log('Image deleted successfully:', result);
+        return result
+      }
+    });
+    
+    
+    
+  } catch (error) {
+    throw new ApiError(401,`Error deleting image:, ${error}`)
+  }
+}
+
+export {uploadOnCloudinary,deleteCloudinaryOldImage}
 
 
 
