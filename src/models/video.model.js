@@ -6,12 +6,27 @@ import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2"
 
 const videoSchema=new Schema({
     videoFile:{
-        type:String,// cloudary url
-        required:true
+
+        publicId:{
+            type:String,
+            required:true
+        },
+        url:{
+            type:String,
+            required:true
+        }
+
+        
     },
     thumbnail:{
-        type:String,// cloudary url
-        required:true
+        publicId:{
+            type:String,
+            required:true
+        },
+        url:{
+            type:String,
+            required:true
+        }
     },
     title:{
         type:String,
@@ -23,12 +38,11 @@ const videoSchema=new Schema({
     },
     duration:{
         type:Number, //we will get duration from cloudinary when we upload vedio on cloudinary
-        required:true
+        require:true
 
     },
     views:{
         type:Number,
-        required:true,
         default:0,
 
     },

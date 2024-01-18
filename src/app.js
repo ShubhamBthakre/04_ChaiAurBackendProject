@@ -1,9 +1,8 @@
 import express from "express";
-import cors from 'cors'
+import cors from "cors";
 
 //The cookie-parser middleware simplifies the handling of cookies in your Express application, making it easier to read and set cookies within your routes. It automatically parses incoming cookies and makes them accessible through the req.cookies object. Additionally, it provides a convenient method, res.cookie(), for setting cookies in the response.
 import cookieParser from "cookie-parser";
-
 
 /**
 const app=express()
@@ -45,28 +44,26 @@ export {app}
 
 **/
 
+const app = express();
 
-const app = express()
-
-app.use(cors({
+app.use(
+  cors({
     origin: process.env.CORS_ORIGIN,
-    credentials: true
-}))
+    credentials: true,
+  })
+);
 
-app.use(express.json({limit: "16kb"}))
-app.use(express.urlencoded({extended: true, limit: "16kb"}))
-app.use(express.static("public"))
-app.use(cookieParser())
-
+app.use(express.json({ limit: "16kb" }));
+app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(express.static("public"));
+app.use(cookieParser());
 
 //routes import
-import userRouter from './routes/user.route.js'
-
+import userRouter from "./routes/user.route.js";
+import videoRouter from "./routes/video.route.js";
 
 //routes declaration
-app.use("/api/v1/users", userRouter) // http://localhost:8000/api/v1/users/register url aisa banenga || we extract router from express what why we use here app.use 
+app.use("/api/v1/users", userRouter); // http://localhost:8000/api/v1/users/register url aisa banenga || we extract router from express what why we use here app.use
+app.use("/api/v1/video", videoRouter);
 
-
-
-
-export { app }
+export { app };

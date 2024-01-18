@@ -1,12 +1,13 @@
 import { ApiError } from "../utils/apiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary,deleteCloudinaryOldImage } from "../utils/cloudinary.js";
+import {
+  uploadOnCloudinary,
+  deleteCloudinaryOldImage,
+} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import Jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-
-
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -25,8 +26,6 @@ const generateAccessAndRefreshTokens = async (userId) => {
     //method to add refresh token in database || validateBeforeSave:false will not validate password it will directly save user object in database
     await user.save({ validateBeforeSave: false });
 
-
-
     return { accessToken, refreshToken };
   } catch (error) {
     throw new ApiError(
@@ -37,20 +36,20 @@ const generateAccessAndRefreshTokens = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-  //get userdetails from frontend
+  //get userdetails from ly uploaded or not
+  //create user object -create entry in db
+  //remove password and refresh token field from responsefrontend
   //validation- not empty
   //check if user is already exit: username, email
   //check for image , check for avatar
-  //upload them to cloudinary, check for avatar if it is properly uploaded or not
-  //create user object -create entry in db
-  //remove password and refresh token field from response
+  //upload them to cloudinary, check for avatar if it is proper
   //check for user creation
   //return res
 
   //form se data aa rha hai ya phir json se data aa rha hai toh req.body me mil jayenga
   const { username, fullName, email, password } = req.body;
- 
-  console.log("req.body details:- ",req.body);
+
+  console.log("req.body details:- ", req.body);
 
   //we are checking if is there any empty field
   if (
@@ -82,7 +81,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.files?.avatar[0]?.path; //here user is uploading mutiple files (upload.fields in userRoute for register) thats why req.files liya hai
   // const coverImageLocalPath=req.files?.coverImage[0]?.path;
 
-  console.log("req.files details",req.files);
+  console.log("req.files details", req.files);
 
   let coverImageLocalPath;
 
@@ -118,7 +117,7 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
   });
 
-  console.log("createdUser",user)
+  console.log("createdUser", user);
 
   //mongoDb har ek entry ke sath ek _id ka field add krta hai
   //here we are checking if user is created properly or not by _id which is created by mangoDb
@@ -176,7 +175,7 @@ const loginUser = asyncHandler(async (req, res) => {
     user._id
   );
 
-  console.log("accessToken:- ",accessToken);
+  console.log("accessToken:- ", accessToken);
   console.log("refreshToken:- ", refreshToken);
 
   //we are making new request to database for access and refresh token || by .select method we will not get password and refreshToken
@@ -207,7 +206,7 @@ const loginUser = asyncHandler(async (req, res) => {
         "User logged in successfully"
       )
     );
-    //it is not good practice to send access and refresh token in response but for some scenario like userWanted to save it mannually or for mobile app development where we can not set cookies in  cookie
+  //it is not good practice to send access and refresh token in response but for some scenario like userWanted to save it mannually or for mobile app development where we can not set cookies in  cookie
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -340,7 +339,6 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     throw new ApiError(401, "All fields are required");
   }
 
-
   // if (fullName ===req.user.fullName){
   //   throw new ApiError(401,"New and Old full name is same please provide different one")
   // }
@@ -348,10 +346,12 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
   //save user in database
   const user = await User.findByIdAndUpdate(
     req.user?._id,
-    { $set:{
-      fullName,
-      email
-    } },
+    {
+      $set: {
+        fullName,
+        email,
+      },
+    },
     {
       //this will return new object with updated one
       new: true,
@@ -368,7 +368,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   //user is uploading single file thats why req.file (we also mentioned upload.single in userRoute for update avatar)
   const avatarLocalPath = req.file?.path;
 
-  console.log("req.file in avatar :- ",req.file)
+  console.log("req.file in avatar :- ", req.file);
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is missing");
@@ -381,7 +381,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   }
 
   //todo:- delete old image from cloudinary
-  await deleteCloudinaryOldImage(req.user.avatar)
+  await deleteCloudinaryOldImage(req.user.avatar);
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -401,7 +401,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 const updateUserCoverImage = asyncHandler(async (req, res) => {
   const coverImageLocalPath = req.file?.path;
 
-  console.log("req.file in coverImage :- ",req.file)
+  console.log("req.file in coverImage :- ", req.file);
 
   if (!coverImageLocalPath) {
     throw new ApiError(400, "Cover Image file is missing");
@@ -414,7 +414,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
   }
 
   //todo:- delete old image from cloudinary
-  await deleteCloudinaryOldImage(req.user.coverImage)
+  await deleteCloudinaryOldImage(req.user.coverImage);
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -439,104 +439,111 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
   }
 
   //aggregate is method which take array
-  const channel=await User.aggregate([
+  const channel = await User.aggregate([
     {
-      $match:{
-        username:username?.toLowerCase()
-      }
-  },
-  {
-    //lookup will return array of documents 
-    $lookup:{
-      from:"subscriptions", //in mongoDb Schema , schema name store in lowercase and plural form
-      localField:"_id",
-      foreignField:"channel",
-      as:"subscribers"
-    }
-
-  },
-  {
-    $lookup:{
-      from:"subscriptions", //in mongoDb Schema , schema name store in lowercase and plural form
-      localField:"_id",
-      foreignField:"subscriber",
-      as:"subscribedTo"
-    }
-
-  },
-  {
-    //addField will add some extra fields
-    $addFields:{
-      subscriberCount:{
-        //size will count total document which takes array as paramer
-        $size:"$subscribers"
+      $match: {
+        username: username?.toLowerCase(),
       },
-      channelsSubscribedToCount:{
-        $size:"$subscribedTo"
+    },
+    {
+      //lookup will return array of documents
+      $lookup: {
+        from: "subscriptions", //in mongoDb Schema , schema name store in lowercase and plural form
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
       },
-      // this field is for subscribe button (true or false)
-      isSubscribed:{
-        $cond:{
-          if:{
-            $in:[req.user?._id,"$subscribers.subscriber"]
+    },
+    {
+      $lookup: {
+        from: "subscriptions", //in mongoDb Schema , schema name store in lowercase and plural form
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      //addField will add some extra fields
+      $addFields: {
+        subscriberCount: {
+          //size will count total document which takes array as paramer
+          $size: "$subscribers",
+        },
+        channelsSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        // this field is for subscribe button (true or false)
+        isSubscribed: {
+          $cond: {
+            if: {
+              $in: [req.user?._id, "$subscribers.subscriber"],
+            },
+            then: true,
+            else: false,
           },
-          then:true,
-          else:false
-        }
-      }
-    }
-  }
-  ,
-  {
-    $project:{
-      fullName:1,
-      username:1,
-      subscriberCount:1,
-      channelsSubscribedToCount:1,
-      isSubscribed:1,
-      avatar:1,
-      coverImage:1,
-      email:1,
-    }
-  }
-])
+        },
+      },
+    },
+    {
+      $project: {
+        fullName: 1,
+        username: 1,
+        subscriberCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      },
+    },
+  ]);
 
-//what datatype does aggregate return
-//todo:console.log(channel)
+  //what datatype does aggregate return
+  //todo:console.log(channel)
 
-console.log(channel)
+  console.log(channel);
 
   if (!channel?.length) {
     throw new ApiError(404, "Channel does not exit");
   }
 
-  //we have 
+  //we have
   return res
     .status(200)
     .json(new ApiResponse(200, channel[0], "User channel fetch successfully"));
 });
 
 const getWatchHistory = asyncHandler(async (req, res) => {
+  console.log("req.user._id:- ", req.user._id);
+  // mongoDb _id= objectId('65a22de27a32dcba1279b5de')
+  // But in req.user._id we get in the form of string _id='65a22de27a32dcba1279b5de'
+  // we have to convert it in aggregation pipeline by new mongoose.Types.ObjectId(req.user._id)
+
   const user = await User.aggregate([
     {
+      //new keyword is important
       $match: {
-        _id: new mongoose.Types.ObjectId(req.user._id), //aggregate me directly mongoDb se contact hota hai isliye object Id match hone k liye aise convert krna padta hai
+        _id: new mongoose.Types.ObjectId(req.user._id), //for other operations mongoose converts _id to MongoDb objectId but aggregate pipeline directly send to contact mongoDb so object ID has to be converted like this to match
       },
     },
     {
+      //we injected videos in users watch history thats why this lookup to get details of videos
       $lookup: {
         from: "videos",
-        localField: "watchHistory",
+        localField: "watchHistory", //local field of users
         foreignField: "_id",
         as: "watchHistory",
         pipeline: [
           {
+            // in videos of owner field we have to inject user again this is called nested pipeline (sub pipeline)
             $lookup: {
               from: "users",
-              localField: "owner",
+              localField: "owner", //local field of videos
               foreignField: "_id",
               as: "owner",
               pipeline: [
+                //in videos owner we got all fields of user (i.e userrname, fullName, email,...),we just have requirement of fullName: 1,username: 1, avatar: 1,
+                //todo :- check $ project outside of pipeline
                 {
                   $project: {
                     fullName: 1,
@@ -547,9 +554,13 @@ const getWatchHistory = asyncHandler(async (req, res) => {
               ],
             },
           },
+
           {
+            //in owner field we will get array of documents , we can access details by applying[0] element but we can further modify in good practice below by adding one more field owner
             $addFields: {
+              //existing field will overwrite thats why here we took same name owner
               owner: {
+                //field me se nikalna hai thats why $
                 $first: "$owner",
               },
             },
@@ -563,6 +574,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 });
 
 
+
 export {
   registerUser,
   loginUser,
@@ -574,5 +586,5 @@ export {
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
-  getWatchHistory,
+  getWatchHistory
 };
