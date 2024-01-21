@@ -21,7 +21,7 @@ try {
 
         const decodedToken= jwt.verify(accessToken,process.env.ACCESS_TOKEN_SECRET)
 
-        console.log("Decoded token while logout route", decodedToken)
+        // console.log("Decoded token", decodedToken)
     
         //in decodedToken we can access _id because while generateAccessToken in userSchema  we have passed _id in payload as like jwt.sign( _id:this._id) 
     
